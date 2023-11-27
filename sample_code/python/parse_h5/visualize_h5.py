@@ -28,7 +28,7 @@ def create_cloud_from_distance_image(distance: np.array, rays: np.array, horizon
 def main():
    
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p','--path', default="/tmp", type=str, help="Path to h5 file")
+    parser.add_argument('-p','--path', default="/tmp", type=str, help="Path to h5 file", required=True)
     parser.add_argument('-m','--min_amplitude', default=0, type=int, help="minimum amplitude to display")
     args = parser.parse_args()
     plt.ion()
@@ -40,7 +40,7 @@ def main():
     rays=h5['recording_information']['rays'][()]
 
     for key in h5['frames'].keys():
-        print(key)
+        print("showing frame: ",key)
         distance=h5['frames'][key]['Distance'][()]
         amplitude=h5['frames'][key]['Amplitude'][()]
 
@@ -52,10 +52,12 @@ def main():
 
 
 
-        surf = ax.scatter( x,y,z,c=amplitude, cmap=cm.coolwarm,
+        surf = ax.scatter( x,y,z,c=amplitude, cmap=cm.jet,
                             linewidth=0, antialiased=False)
-        fig.canvas.draw_idle()
-        plt.pause(0.05)
+        fig.canvas.draw()
+        fig.canvas.flush_events()
+ 
+        time.sleep(0.1)
 
     plt.show()
 
