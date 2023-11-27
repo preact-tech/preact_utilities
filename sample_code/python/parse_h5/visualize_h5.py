@@ -1,3 +1,9 @@
+'''
+visualize_h5.py
+
+Sample code to parse and display data from PreAct Viewer hdf5 recording
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
