@@ -28,7 +28,7 @@ def main():
     args = parser.parse_args()
     plt.ion()
     fig, ax = plt.subplots(1,1,subplot_kw={"projection": "3d"})
-    ax.view_init(elev=0, azim=0)
+    ax.view_init(elev=0, azim=180)
 
 
     h5=h5py.File(args.path, "r")
