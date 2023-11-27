@@ -1,15 +1,9 @@
-import os, sys
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import cv2
 from matplotlib import cm
 import h5py
 import argparse
 import numpy as np
-import math as m
-import time    
 
 
 
@@ -24,6 +18,7 @@ def create_cloud_from_distance_image(distance: np.array, rays: np.array, horizon
     rays_small = rays[::slicing[1], ::slicing[0], :]
     cloud = distance[..., np.newaxis] * rays_small
     return cloud
+
 
 def main():
    
@@ -51,13 +46,12 @@ def main():
         amplitude = amplitude[amplitude>args.min_amplitude]
 
 
-
         surf = ax.scatter( x,y,z,c=amplitude, cmap=cm.jet,
                             linewidth=0, antialiased=False)
         fig.canvas.draw()
         fig.canvas.flush_events()
- 
-        time.sleep(0.1)
+        surf.remove()
+
 
     plt.show()
 
