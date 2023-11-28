@@ -17,6 +17,10 @@
 #include <boost/program_options.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/opencv.hpp>
+
+#include "open3d/Open3D.h"
+#include <Eigen/Dense>
 
 using namespace std::chrono_literals;
 using namespace std::chrono;
@@ -35,21 +39,32 @@ static std::atomic<uint32_t> dcsCount;
 static std::atomic<uint32_t> distanceCount;
 static std::atomic<uint32_t> grayscaleCount;
 tofcore::CartesianTransform cartesianTransform_;
+open3d::visualization::Visualizer vis;
+
+bool first = true;
 
 static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
 {
     cv::Mat dist_frame;
+    cv::Mat dist_frame_resized;
+    cv::Mat amp_frame;
+    cv::Mat amp_frame_resized;
+
     double *x_out;
     double *y_out;
     double *z_out;
-    uint16_t *it_d ;
-    uint16_t *it_a ;
+    uint16_t *it_d;
+    uint16_t *it_a;
     int count = 0;
     uint16_t distance;
-    uint16_t y ;
-    uint16_t x ;
+    uint16_t y;
+    uint16_t x;
     int valid = 0;
     double px, py, pz;
+    std::vector<Eigen::Vector3d> points = std::vector<Eigen::Vector3d>();
+    std::vector<Eigen::Vector3d> look_at = std::vector<Eigen::Vector3d>();
+    open3d::geometry::PointCloud point_cloud;
+    std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr;
     using DataType = tofcore::Measurement_T::DataType;
     switch (pData->type())
     {
@@ -62,30 +77,52 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
                       << (pData->pixel_buffer().size()) << std::endl;
         }
         // Do filtering on this opencv Mat
-     dist_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->distance().begin());
-        x_out = new double[pData->height() * pData->width()];
-        y_out = new double[pData->height() * pData->width()];
-        z_out = new double[pData->height() * pData->width()];
-         it_d = (unsigned short *)dist_frame.datastart;
-         it_a = (unsigned short *)pData->amplitude().begin();
-         count = 0;
+        dist_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->distance().begin());
+        cv::resize(dist_frame, dist_frame_resized, cv::Size(dist_frame.cols * 4, dist_frame.rows * 4));
+        dist_frame_resized *= 5; // add some gain to make image look better
+        cv::imshow("Distance Image", dist_frame_resized);
+        cv::waitKey(1);
+        amp_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->amplitude().begin());
+        cv::resize(amp_frame, amp_frame_resized, cv::Size(amp_frame.cols * 4, amp_frame.rows * 4));
+        amp_frame_resized *= 50; // add some gain to make image look better
+        cv::imshow("Amplitude Image", amp_frame_resized);
+        cv::waitKey(1);
+        it_d = (unsigned short *)dist_frame.datastart;
+        it_a = (unsigned short *)pData->amplitude().begin();
+        count = 0;
+        points.clear();
         while (it_d != (const unsigned short *)dist_frame.dataend)
         {
-             distance = *it_d;
-             y = count / pData->width();
-             x = count % pData->width();
-             valid = 0;
+            distance = *it_d;
+            y = count / pData->width();
+            x = count % pData->width();
+            valid = 0;
             px = py = pz = 0.1;
             cartesianTransform_.transformPixel(x, y, distance, px, py, pz);
             px /= 1000.0; // mm -> m
             py /= 1000.0; // mm -> m
             pz /= 1000.0; // mm -> m
-            x_out[count] = px;
-            y_out[count] = py;
-            z_out[count] = pz;
+            auto tmp = Eigen::Vector3d(pz, px, py);
+            points.push_back(tmp);
             ++count;
             it_d += 1;
         }
+        point_cloud = open3d::geometry::PointCloud(points);
+        cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(point_cloud);
+        // vis.RemoveGeometry();
+
+        vis.ClearGeometries();
+        vis.AddGeometry(cloud_ptr);
+        vis.GetViewControl().Rotate(523.6*3,523.6*3,0,0);
+        vis.GetViewControl().SetZoom(0.35);
+        vis.GetRenderOption().point_color_option_=open3d::visualization::RenderOption::PointColorOption::YCoordinate;
+        vis.PollEvents();
+        vis.UpdateRender();
+        vis.UpdateGeometry();
+        dist_frame.release();
+        dist_frame_resized.release();
+        amp_frame.release();
+        amp_frame_resized.release();
         break;
     case DataType::DCS:
         ++dcsCount;
@@ -128,80 +165,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
     default:
         std::cout << "UNRECOGNIZED data type: " << static_cast<int16_t>(pData->type()) << std::endl;
     }
-    if (verbosity > 0)
-    {
-        auto chip_temps = pData->sensor_temperatures();
-        if (chip_temps)
-        {
-            std::cout << "Sensor temperatures: " << (*chip_temps)[0] << ", " << (*chip_temps)[1] << ", " << (*chip_temps)[2] << ", " << (*chip_temps)[3] << std::endl;
-        }
-        else
-        {
-            std::cout << "No sensor temperature data" << std::endl;
-        }
-        auto integration_times = pData->integration_times();
-        if (integration_times)
-        {
-            std::cout << "Integration time settings (ms): ";
-            for (auto &v : *integration_times)
-            {
-                std::cout << v << " ";
-            }
-            std::cout << std::endl;
-        }
-        else
-        {
-            std::cout << "No integration time data" << std::endl;
-        }
-        auto mod_frequencies = pData->modulation_frequencies();
-        if (mod_frequencies)
-        {
-            std::cout << "Modulation Frequency settings (Hz): ";
-            for (auto &v : *mod_frequencies)
-            {
-                std::cout << v << " ";
-            }
-            std::cout << std::endl;
-        }
-        else
-        {
-            std::cout << "No modulation frequency data" << std::endl;
-        }
-        auto v_binning = pData->vertical_binning();
-        auto h_binning = pData->horizontal_binning();
-        if (v_binning && h_binning)
-        {
-            std::cout << "Binning settings: " << (int)(*h_binning) << " " << (int)(*v_binning) << std::endl;
-        }
-        else
-        {
-            std::cout << "No binning data" << std::endl;
-        }
-
-        auto dll_settings = pData->dll_settings();
-        if (dll_settings)
-        {
-            std::cout << "DLL settings: " << ((*dll_settings)[0] != 0 ? "True " : "False ") << (int)(*dll_settings)[1] << " " << (int)(*dll_settings)[2] << " " << (int)(*dll_settings)[3] << std::endl;
-        }
-        else
-        {
-            std::cout << "No DLL settings" << std::endl;
-        }
-        auto illum = pData->illuminator_info();
-        if (illum)
-        {
-            const auto &illum_info = *illum;
-            std::cout << "Illuminator info: 0x" << std::hex << (int)illum_info.led_segments_enabled << std::dec << " "
-                      << illum_info.temperature_c << "C "
-                      << illum_info.vled_v << "V "
-                      << illum_info.photodiode_v << "V"
-                      << std::endl;
-        }
-        else
-        {
-            std::cout << "No Illuminator information" << std::endl;
-        }
-    }
+    
 }
 
 namespace po = boost::program_options;
@@ -237,9 +201,9 @@ private:
 static void parseArgs(int argc, char *argv[])
 {
     po::options_description desc("illuminator board test");
-    desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))("amplitude,a", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")("ambient", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")("distance,d", po::bool_switch(&captureDistance), "Capture distance (or amplitude) frames instead of DCS frames")("verbose,V",
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                new CountValue(&verbosity),
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "Increase verbosity of output");
+    desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort)->default_value(devicePort))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))("baud-rate,b", po::value<uint32_t>(&baudRate)->default_value(DEFAULT_BAUD_RATE))("amplitude,a", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")("ambient", po::bool_switch(&captureAmxxx), "Capture DCS+Ambient or Distance Amplitude frames, (not just DCS or Distance)")("distance,d", po::bool_switch(&captureDistance), "Capture distance (or amplitude) frames instead of DCS frames")("verbose,V",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           new CountValue(&verbosity),
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           "Increase verbosity of output");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -271,11 +235,24 @@ int main(int argc, char *argv[])
     {
 
         tofcore::Sensor sensor{protocolVersion, devicePort, baudRate};
+        std::cout << devicePort << std::endl;
         std::vector<double> rays_x, rays_y, rays_z;
         sensor.getLensInfo(rays_x, rays_y, rays_z);
-        cartesianTransform_.initLensTransform(340, 260, rays_x, rays_y, rays_z);
-        sensor.subscribeMeasurement(&measurement_callback); // callback is called from background thread
+        try
+        {
+            cartesianTransform_.initLensTransform(320, 240, rays_x, rays_y, rays_z);
+        }
+        catch (std::exception &e)
+        {
+            std::cout << "Error retreiving lens info..." << std::endl;
+            return -1;
+        }
+        vis.CreateVisualizerWindow("Open3D",1480,1080,50,50,true);
+        vis.PollEvents();
+        vis.UpdateRender();
 
+        sensor.subscribeMeasurement(&measurement_callback); // callback is called from background thread
+        sensor.setIntegrationTime(4000);
         sensor.streamDistanceAmplitude();
 
         auto lastTime = steady_clock::now();
