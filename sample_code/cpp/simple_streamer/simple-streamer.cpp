@@ -85,7 +85,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
             ++count;
             it_d += 1;
         }
-        open3d::geometry::PointCloud point_cloud  = open3d::geometry::PointCloud(points);
+        open3d::geometry::PointCloud point_cloud = open3d::geometry::PointCloud(points);
         std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(point_cloud);
         // vis.RemoveGeometry();
 
@@ -138,13 +138,11 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
 #endif
     {
-
         tofcore::Sensor sensor{protocolVersion, devicePort, baudRate};
-        std::cout << devicePort << std::endl;
         std::vector<double> rays_x, rays_y, rays_z;
-        sensor.getLensInfo(rays_x, rays_y, rays_z);
         try
         {
+            sensor.getLensInfo(rays_x, rays_y, rays_z);
             cartesianTransform_.initLensTransform(320, 240, rays_x, rays_y, rays_z);
         }
         catch (std::exception &e)
@@ -160,10 +158,9 @@ int main(int argc, char *argv[])
         sensor.setIntegrationTime(4000);
         sensor.streamDistanceAmplitude();
 
-        auto lastTime = steady_clock::now();
         while (!exitRequested) // wait for ^\ or ^C
         {
-            std::this_thread::sleep_until(lastTime + 1000ms);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         std::cout << "Shutting down..." << std::endl;
         sensor.stopStream();
