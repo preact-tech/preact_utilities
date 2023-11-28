@@ -40,41 +40,35 @@ bool first = true;
 
 static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
 {
-    cv::Mat dist_frame;
-    cv::Mat dist_frame_resized;
-    cv::Mat amp_frame;
-    cv::Mat amp_frame_resized;
-    uint16_t *it_d;
-    uint16_t *it_a;
-    int count = 0;
-    uint16_t distance;
-    uint16_t y;
-    uint16_t x;
-    int valid = 0;
-    double px, py, pz;
-    std::vector<Eigen::Vector3d> points = std::vector<Eigen::Vector3d>();
-    std::vector<Eigen::Vector3d> look_at = std::vector<Eigen::Vector3d>();
-    open3d::geometry::PointCloud point_cloud;
-    std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr;
+
     using DataType = tofcore::Measurement_T::DataType;
 
     if (pData->type() == DataType::DISTANCE_AMPLITUDE)
     {
+        std::vector<Eigen::Vector3d> points = std::vector<Eigen::Vector3d>();
+        std::vector<Eigen::Vector3d> look_at = std::vector<Eigen::Vector3d>();
+
+        cv::Mat dist_frame_resized;
+        cv::Mat amp_frame_resized;
         // Do filtering on this opencv Mat
-        dist_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->distance().begin());
+        cv::Mat dist_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->distance().begin());
         cv::resize(dist_frame, dist_frame_resized, cv::Size(dist_frame.cols * 4, dist_frame.rows * 4));
         dist_frame_resized *= 5; // add some gain to make image look better
         cv::imshow("Distance Image", dist_frame_resized);
         cv::waitKey(1);
-        amp_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->amplitude().begin());
+        cv::Mat amp_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->amplitude().begin());
         cv::resize(amp_frame, amp_frame_resized, cv::Size(amp_frame.cols * 4, amp_frame.rows * 4));
         amp_frame_resized *= 50; // add some gain to make image look better
         cv::imshow("Amplitude Image", amp_frame_resized);
         cv::waitKey(1);
-        it_d = (unsigned short *)dist_frame.datastart;
-        it_a = (unsigned short *)pData->amplitude().begin();
-        count = 0;
-        points.clear();
+        uint16_t *it_d = (unsigned short *)dist_frame.datastart;
+        uint16_t *it_a = (unsigned short *)pData->amplitude().begin();
+        int count = 0;
+        double px, py, pz;
+        uint16_t distance;
+        uint16_t y;
+        uint16_t x;
+        int valid = 0;
         while (it_d != (const unsigned short *)dist_frame.dataend)
         {
             distance = *it_d;
@@ -91,8 +85,8 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
             ++count;
             it_d += 1;
         }
-        point_cloud = open3d::geometry::PointCloud(points);
-        cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(point_cloud);
+        open3d::geometry::PointCloud point_cloud  = open3d::geometry::PointCloud(points);
+        std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(point_cloud);
         // vis.RemoveGeometry();
 
         vis.ClearGeometries();
@@ -107,7 +101,6 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         dist_frame_resized.release();
         amp_frame.release();
         amp_frame_resized.release();
-
     }
 }
 namespace po = boost::program_options;
@@ -171,7 +164,7 @@ int main(int argc, char *argv[])
         while (!exitRequested) // wait for ^\ or ^C
         {
             std::this_thread::sleep_until(lastTime + 1000ms);
-          }
+        }
         std::cout << "Shutting down..." << std::endl;
         sensor.stopStream();
     } // when scope is exited, sensor connection is cleaned up
