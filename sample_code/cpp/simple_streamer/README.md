@@ -23,9 +23,11 @@ make
 
 - '--protocol-version' (optional): Protocol version to connect with. Default: 1
 
+- '-m', '--min-amplitude' (optional): Minimum amplitude requreid for a point to be displayed.  Default: 0
+
 
 ## Usage
 
 ```
-./simple_streamer
+./simple_streamer -p /dev/ttyACM0
 ```

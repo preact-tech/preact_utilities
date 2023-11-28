@@ -32,6 +32,7 @@ static bool captureDistance{false};
 static std::string devicePort{DEFAULT_PORT_NAME};
 static volatile bool exitRequested{false};
 static uint16_t protocolVersion{DEFAULT_PROTOCOL_VERSION};
+static uint16_t minAmplitude{0};
 
 tofcore::CartesianTransform cartesianTransform_;
 open3d::visualization::Visualizer vis;
@@ -58,7 +59,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         cv::waitKey(1);
         cv::Mat amp_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->amplitude().begin());
         cv::resize(amp_frame, amp_frame_resized, cv::Size(amp_frame.cols * 4, amp_frame.rows * 4));
-        amp_frame_resized *= 50; // add some gain to make image look better
+        amp_frame_resized *= 100; // add some gain to make image look better
         cv::imshow("Amplitude Image", amp_frame_resized);
         cv::waitKey(1);
         uint16_t *it_d = (unsigned short *)dist_frame.datastart;
@@ -71,6 +72,13 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         int valid = 0;
         while (it_d != (const unsigned short *)dist_frame.dataend)
         {
+            if (*it_a < minAmplitude)
+            {
+                ++count;
+                it_d += 1;
+                it_a += 1;
+                continue;
+            }
             distance = *it_d;
             y = count / pData->width();
             x = count % pData->width();
@@ -84,6 +92,7 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
             points.push_back(tmp);
             ++count;
             it_d += 1;
+            it_a += 1;
         }
         open3d::geometry::PointCloud point_cloud = open3d::geometry::PointCloud(points);
         std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr = std::make_shared<open3d::geometry::PointCloud>(point_cloud);
@@ -108,7 +117,7 @@ namespace po = boost::program_options;
 static void parseArgs(int argc, char *argv[])
 {
     po::options_description desc("illuminator board test");
-    desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort)->default_value(devicePort))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION));
+    desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort)->default_value(devicePort))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))("min-amplitude,m", po::value<uint16_t>(&minAmplitude)->default_value(0));
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -150,7 +159,7 @@ int main(int argc, char *argv[])
             std::cout << "Error retreiving lens info..." << std::endl;
             return -1;
         }
-        vis.CreateVisualizerWindow("Open3D", 1480, 1080, 50, 50, true);
+        vis.CreateVisualizerWindow("Open3D", 1500, 1000, 75, 50, true);
         vis.PollEvents();
         vis.UpdateRender();
 
