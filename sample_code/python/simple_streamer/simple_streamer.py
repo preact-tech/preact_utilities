@@ -66,7 +66,7 @@ ax[0].set_title("Amplitude Image")
 ax[1].set_title("Distance Image")
 ax[2].set_title("Point Cloud")
 
-
+#matplotlib is slow for rendering point cloud, try open3d library (used in c++ example) if you want to stream realtime
 for data in measurement_data:
     distance = np.array(data.distance_data)
     amplitude = np.array(data.amplitude_data)
