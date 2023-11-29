@@ -11,8 +11,11 @@ import time
 import argparse
 import numpy as np
 import pytofcore
-
+import open3d as o3d
+import cv2
 measurement_data=[]
+vis = o3d.visualization.Visualizer()
+vis.create_window()
 
 def create_cloud_from_distance_image(distance: np.array, rays: np.array, horizontal_binning: bool, vertical_binning: bool):
     # map the distance image (m x n) to a point cloud (m x n x 3)
@@ -28,12 +31,30 @@ def create_cloud_from_distance_image(distance: np.array, rays: np.array, horizon
 
 def measurement_callback(data):
   if data.data_type == pytofcore.Measurement.DataType.DISTANCE_AMPLITUDE:
-    measurement_data.append(data)
-      #Distance data is in millimeters
-      #Do filtering on this distance array
-    
-    #surf.remove()
+    #measurement_data.append(data)
+    distance = np.array(data.distance_data)
+    amplitude = np.array(data.amplitude_data)
+    cv2.imshow("Distance Image",distance*5)
+    cv2.imshow("Amplitude Image",amplitude*100)
+    cv2.waitKey(1)
+    cloud = create_cloud_from_distance_image(distance / 1000.0, rays,False,False)
+    x = cloud[:,:,0][amplitude>args.min_amplitude]
+    y = cloud[:,:,1][amplitude>args.min_amplitude]
+    z = cloud[:,:,2][amplitude>args.min_amplitude]
+    amplitude = amplitude[amplitude>args.min_amplitude]
+    pcd = o3d.geometry.PointCloud()
+    xyz=np.concatenate((z.reshape((-1,1)),x.reshape((-1,1)),y.reshape((-1,1))),axis=1)
+    pcd.points = o3d.utility.Vector3dVector(xyz)
+    vis.clear_geometries()
 
+    # add pcd to visualizer
+    vis.add_geometry(pcd)
+    vis.get_view_control().rotate(523.6 * 3, 523.6 * 3, 0, 0)
+    vis.get_view_control().set_zoom(0.35)
+    vis.get_render_option().point_color_option = o3d.visualization.PointColorOption.YCoordinate
+
+    vis.poll_events()
+    vis.update_renderer()
     measurement_callback.counter += 1
 
 
@@ -50,8 +71,9 @@ rays = np.array(sensor.pixel_rays).reshape(
         (3, 240, 320)).transpose((1, 2, 0))
 sensor.subscribe_measurement(measurement_callback)
 measurement_callback.counter=0
+sensor.set_integration_times(4000,0,0)
 sensor.stream_distance_amplitude()
-while measurement_callback.counter < 20:
+while measurement_callback.counter < 2000:
     time.sleep(0.1)
 sensor.stop_stream()
 
@@ -67,25 +89,27 @@ ax[1].set_title("Distance Image")
 ax[2].set_title("Point Cloud")
 
 #matplotlib is slow for rendering point cloud, try open3d library (used in c++ example) if you want to stream realtime
-for data in measurement_data:
-    distance = np.array(data.distance_data)
-    amplitude = np.array(data.amplitude_data)
-    cloud = create_cloud_from_distance_image(distance / 1000.0, rays,False,False)
-    a = ax[0].imshow(amplitude)
-    d = ax[1].imshow(distance)
-    x = cloud[:,:,0][amplitude>args.min_amplitude]
-    y = cloud[:,:,1][amplitude>args.min_amplitude]
-    z = cloud[:,:,2][amplitude>args.min_amplitude]
-    amplitude = amplitude[amplitude>args.min_amplitude]
-    surf = ax[2].scatter( x,y,z,c=amplitude, cmap=cm.jet,
-                        linewidth=0, antialiased=False)
-    fig.canvas.draw()
-    fig.canvas.flush_events()
-    surf.remove()
-    d.remove()
-    a.remove()
+#for data in measurement_data:
+    # distance = np.array(data.distance_data)
+    # amplitude = np.array(data.amplitude_data)
+    # cv2.imshow("Distance Image",distance)
+    # cv2.imshow("Amplitude Image",amplitude)
 
-plt.show()
+    # cloud = create_cloud_from_distance_image(distance / 1000.0, rays,False,False)
+    # x = cloud[:,:,0][amplitude>args.min_amplitude]
+    # y = cloud[:,:,1][amplitude>args.min_amplitude]
+    # z = cloud[:,:,2][amplitude>args.min_amplitude]
+    # amplitude = amplitude[amplitude>args.min_amplitude]
+    # pcd = o3d.geometry.PointCloud()
+    # xyz=np.concatenate((x.reshape((-1,1)),y.reshape((-1,1)),z.reshape((-1,1))),axis=1)
+    # pcd.points = o3d.utility.Vector3dVector(xyz)
+    # vis.clear_geometries()
+
+    # # add pcd to visualizer
+    # vis.add_geometry(pcd)
+    # vis.poll_events()
+    # vis.update_renderer()
+
 
 
 
