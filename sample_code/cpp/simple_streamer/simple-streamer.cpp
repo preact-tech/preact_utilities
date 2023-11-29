@@ -3,7 +3,7 @@
  *
  * Copyright 2023 PreAct Technologies
  *
- * Test program that uses libtofcore to stream DCS or DCS+Ambient data
+ * Test program that uses libtofcore to stream Distance Apmplitude data
  */
 #include "tofcore/tof_sensor.hpp"
 #include "tofcore/cartesian_transform.hpp"
