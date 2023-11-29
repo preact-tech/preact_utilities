@@ -10,7 +10,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON) # Without this flag CMake may resort to just
 
 find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(ToFCore REQUIRED)
-find_package(usbp  REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Open3D HINTS ${CMAKE_INSTALL_PREFIX}/lib/cmake)
 if(NOT Open3D_FOUND)

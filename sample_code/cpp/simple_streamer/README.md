@@ -5,7 +5,7 @@ Sample c++ code to stream and display data from a PreAct ToF sensor.
 Install the following libraries:
 
 - libtofcore
-- Open3d
+- Open3d (http://www.open3d.org/docs/release/compilation.html)
 - Opencv
 - Eigen
 
