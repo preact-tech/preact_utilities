@@ -19,7 +19,8 @@ make
 
 ## Arguments
 
-- '-p','--port-name'  (optional): Port to connect to device over. Default: /dev/ttyACM0
+- '-p1','--device1-uri'  (optional): Port to connect to device over. Default: /dev/ttyACM0
+- '-p2','--device2-uri'  (optional): Port to connect to device over. Default: /dev/ttyACM2
 
 - '--protocol-version' (optional): Protocol version to connect with. Default: 1
 
@@ -29,5 +30,5 @@ make
 ## Usage
 
 ```
-./simple_streamer -p /dev/ttyACM0
+./simple_streamer -p1 /dev/ttyACM0 -p2 /dev/ttyACM2
 ```
