@@ -27,8 +27,6 @@ using namespace std::chrono;
 using namespace tofcore;
 
 static uint32_t baudRate{DEFAULT_BAUD_RATE};
-static bool captureAmxxx{false};
-static bool captureDistance{false};
 static std::string devicePort{DEFAULT_PORT_NAME};
 static volatile bool exitRequested{false};
 static uint16_t protocolVersion{DEFAULT_PROTOCOL_VERSION};
@@ -37,7 +35,6 @@ static uint16_t minAmplitude{0};
 tofcore::CartesianTransform cartesianTransform_;
 open3d::visualization::Visualizer vis;
 
-bool first = true;
 
 static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
 {
@@ -53,15 +50,21 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
         cv::Mat amp_frame_resized;
         // Do filtering on this opencv Mat
         cv::Mat dist_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->distance().begin());
-        cv::resize(dist_frame, dist_frame_resized, cv::Size(dist_frame.cols * 4, dist_frame.rows * 4));
+        cv::resize(dist_frame, dist_frame_resized, cv::Size(dist_frame.cols * 3, dist_frame.rows * 3));
         dist_frame_resized *= 5; // add some gain to make image look better
         cv::imshow("Distance Image", dist_frame_resized);
         cv::waitKey(1);
         cv::Mat amp_frame = cv::Mat(pData->height(), pData->width(), CV_16UC1, (void *)pData->amplitude().begin());
-        cv::resize(amp_frame, amp_frame_resized, cv::Size(amp_frame.cols * 4, amp_frame.rows * 4));
-        amp_frame_resized *= 100; // add some gain to make image look better
+        cv::resize(amp_frame, amp_frame_resized, cv::Size(amp_frame.cols * 3, amp_frame.rows * 3));
+        amp_frame_resized *= 50; // add some gain to make image look better
         cv::imshow("Amplitude Image", amp_frame_resized);
         cv::waitKey(1);
+        //cv::medianBlur(dist_frame, dist_frame, 3);
+        cv::Mat src = cv::Mat::zeros(dist_frame.size(), CV_32FC1);
+        cv::Mat dst = cv::Mat::zeros(dist_frame.size(), CV_32FC1);
+        dist_frame.convertTo(src, CV_32FC1);
+        cv::bilateralFilter(src, dst, 9, 75,75);
+        dst.convertTo(dist_frame, CV_16UC1);
         uint16_t *it_d = (unsigned short *)dist_frame.datastart;
         uint16_t *it_a = (unsigned short *)pData->amplitude().begin();
         int count = 0;
@@ -100,9 +103,12 @@ static void measurement_callback(std::shared_ptr<tofcore::Measurement_T> pData)
 
         vis.ClearGeometries();
         vis.AddGeometry(cloud_ptr);
+        //0.003 [radian/pixel] * (180/pi) [degrees/radian] = 0.1719 [degrees/pixel] OR 5.8178 [pixels/degree]
+        //Taking 360 [degrees/rotation] * 5.8178 [pixels/degree] = 2094.3951 [pixels/rotation]
         vis.GetViewControl().Rotate(523.6 * 3, 523.6 * 3, 0, 0);
-        vis.GetViewControl().SetZoom(0.35);
+        vis.GetViewControl().SetZoom(0.25);
         vis.GetRenderOption().point_color_option_ = open3d::visualization::RenderOption::PointColorOption::YCoordinate;
+        vis.GetRenderOption().point_size_=3;
         vis.PollEvents();
         vis.UpdateRender();
         vis.UpdateGeometry();
@@ -116,7 +122,7 @@ namespace po = boost::program_options;
 
 static void parseArgs(int argc, char *argv[])
 {
-    po::options_description desc("illuminator board test");
+    po::options_description desc("Simple Streaming Example");
     desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort)->default_value(devicePort))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))("min-amplitude,m", po::value<uint16_t>(&minAmplitude)->default_value(0));
 
     po::variables_map vm;
@@ -164,7 +170,7 @@ int main(int argc, char *argv[])
         vis.UpdateRender();
 
         sensor.subscribeMeasurement(&measurement_callback); // callback is called from background thread
-        sensor.setIntegrationTime(4000);
+        sensor.setIntegrationTime(3000);
         sensor.streamDistanceAmplitude();
 
         while (!exitRequested) // wait for ^\ or ^C
