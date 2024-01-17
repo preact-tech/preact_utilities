@@ -1,5 +1,5 @@
 '''
-simple_streamer.py
+basic_streamer.py
 
 Sample code connect to sensor, capture 20 frames, then display the amplitude image, distance image, and point cloud.
 '''

@@ -1,5 +1,5 @@
 /**
- * @file simple-streamer.cpp
+ * @file basic-streamer.cpp
  *
  * Copyright 2023 PreAct Technologies
  *

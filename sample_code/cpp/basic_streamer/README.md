@@ -1,4 +1,4 @@
-# Simple Streamer
+# basic Streamer
 Sample c++ code to stream and display data from a PreAct ToF sensor.
 
 ## Prerequisites 
@@ -29,5 +29,5 @@ make
 ## Usage
 
 ```
-./simple_streamer -p /dev/ttyACM0
+./basic_streamer -p /dev/ttyACM0
 ```

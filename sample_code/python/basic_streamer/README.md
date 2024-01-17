@@ -1,4 +1,4 @@
-# Simple Streamer
+# Basic Streamer
 Sample python code to stream and display data from a PreAct ToF sensor.
 
 ## Prerequisites 
@@ -19,5 +19,5 @@ pip install -r requirements.txt
 ## Usage
 
 ```
-python3 simple_streamer.py
+python3 basic_streamer.py
 ```

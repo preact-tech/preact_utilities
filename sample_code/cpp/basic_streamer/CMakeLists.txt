@@ -1,8 +1,8 @@
 #
-# examples/simple-streamer
+# examples/basic-streamer
 #
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
-project(simple_streamer )
+project(basic_streamer )
 
 find_package(Threads REQUIRED)
 set(Boost_USE_STATIC_LIBS   ON)
@@ -20,7 +20,7 @@ include_directories(
  ${OpenCV_INCLUDE_DIRS}
 )
 
-add_executable(simple-streamer simple-streamer.cpp)
-target_link_libraries(simple-streamer tofcore pthread Boost::program_options tofcore usbp Open3D::Open3D ${OpenCV_LIBS})
-target_compile_features(simple-streamer PRIVATE cxx_std_17)
+add_executable(basic-streamer basic-streamer.cpp)
+target_link_libraries(basic-streamer tofcore pthread Boost::program_options tofcore usbp Open3D::Open3D ${OpenCV_LIBS})
+target_compile_features(basic-streamer PRIVATE cxx_std_17)
 
