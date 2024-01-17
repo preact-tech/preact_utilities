@@ -1,5 +1,5 @@
-# Simple Streamer
-Sample c++ code to stream and display data from a PreAct ToF sensor.
+# Dual Streamer
+Sample c++ code to stream and display data from two PreAct ToF sensor.
 
 ## Prerequisites 
 Install the following libraries:
@@ -19,7 +19,8 @@ make
 
 ## Arguments
 
-- '-p','--device-uri'   (optional): Port to connect to device over. Default: /dev/ttyACM0
+- '-p1','--device1-uri'  (optional): Port to connect to device over. Default: /dev/ttyACM0
+- '-p2','--device2-uri'  (optional): Port to connect to device over. Default: /dev/ttyACM2
 
 - '--protocol-version' (optional): Protocol version to connect with. Default: 1
 
@@ -29,5 +30,5 @@ make
 ## Usage
 
 ```
-./simple_streamer -p /dev/ttyACM0
+./dual-streamer -p1 /dev/ttyACM0 -p2 /dev/ttyACM2
 ```
