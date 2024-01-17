@@ -88,6 +88,7 @@ static bool captureDistance{false};
 static std::string devicePort1{DEFAULT_PORT_NAME};
 static std::string devicePort2{"/dev/ttyACM2"};
 static volatile bool exitRequested{false};
+static  bool threadExitRequested{false};
 static uint16_t protocolVersion{DEFAULT_PROTOCOL_VERSION};
 static uint16_t minAmplitude{0};
 
@@ -95,6 +96,8 @@ tofcore::CartesianTransform cartesianTransform1_;
 tofcore::CartesianTransform cartesianTransform2_;
 open3d::visualization::Visualizer vis;
 std::string transform_input;
+std::mutex mut_trans;
+std::mutex mut_thread;
 float t_x,t_y,t_z,roll,pitch,yaw=0;
 size_t split(const std::string &txt, std::vector<std::string> &strs, char ch)
 {
@@ -131,6 +134,7 @@ void wait_input()
         std::vector<std::string> v;
 
         if(split(transform_input, v, ' ' )==6){
+            std::unique_lock<std::mutex> lk(mut_trans);
             t_x=std::stof(v[0]);
             t_y=std::stof(v[1]);
             t_z=std::stof(v[2]);
@@ -154,10 +158,12 @@ void find_match()
 
         sensor1_messages.take(msg_1);
         sensor2_messages.take(msg_2);
-
+        {
+        std::unique_lock<std::mutex> lk(mut_trans);
         Eigen::Matrix3d rot = open3d::geometry::Geometry3D::GetRotationMatrixFromAxisAngle(Eigen::Vector3d(roll,pitch,yaw));
         msg_2.Rotate(rot,Eigen::Vector3d(0,0,0));
         msg_2.Translate(Eigen::Vector3d(t_x,t_y,t_z));
+        }
         std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr1 = std::make_shared<open3d::geometry::PointCloud>(msg_1);
         std::shared_ptr<open3d::geometry::PointCloud> cloud_ptr2 = std::make_shared<open3d::geometry::PointCloud>(msg_2);
         // vis.RemoveGeometry();

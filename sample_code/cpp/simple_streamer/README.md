@@ -19,7 +19,7 @@ make
 
 ## Arguments
 
-- '-p','--port-name'  (optional): Port to connect to device over. Default: /dev/ttyACM0
+- '-p','--device-uri'   (optional): Port to connect to device over. Default: /dev/ttyACM0
 
 - '--protocol-version' (optional): Protocol version to connect with. Default: 1
 
