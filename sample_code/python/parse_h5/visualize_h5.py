@@ -31,6 +31,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--path', default="/tmp", type=str, help="Path to h5 file", required=True)
     parser.add_argument('-m','--min_amplitude', default=0, type=int, help="minimum amplitude to display")
+    parser.add_argument('-a','--max_amplitude', default=2000, type=int, help="minimum amplitude to display")
     args = parser.parse_args()
     plt.ion()
     fig, ax = plt.subplots(1,1,subplot_kw={"projection": "3d"})
@@ -46,10 +47,11 @@ def main():
         amplitude=h5['frames'][key]['Amplitude'][()]
 
         cloud=create_cloud_from_distance_image(distance, rays,False,False)
-        x = cloud[:,:,0][amplitude>args.min_amplitude]
-        y = cloud[:,:,1][amplitude>args.min_amplitude]
-        z = cloud[:,:,2][amplitude>args.min_amplitude]
-        amplitude = amplitude[amplitude>args.min_amplitude]
+        x = cloud[:,:,0][(amplitude>args.min_amplitude) & (amplitude < args.max_amplitude)]
+        y = cloud[:,:,1][(amplitude>args.min_amplitude) & (amplitude < args.max_amplitude)]
+        z = cloud[:,:,2][(amplitude>args.min_amplitude) & (amplitude < args.max_amplitude)]
+        
+        amplitude = amplitude[(amplitude>args.min_amplitude) & (amplitude < args.max_amplitude)]
 
 
         surf = ax.scatter( x,y,z,c=amplitude, cmap=cm.jet,
