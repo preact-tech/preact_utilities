@@ -1,0 +1,8 @@
+numpy
+open3d
+opencv-python
+python_signal
+torch
+torchvision
+ultralytics
+torchaudio

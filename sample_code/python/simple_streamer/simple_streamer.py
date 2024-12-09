@@ -1,7 +1,7 @@
 '''
 simple_streamer.py
 
-Sample code connect to sensor, capture 20 frames, then display the amplitude image, distance image, and point cloud.
+Sample code connect to sensor, then display the amplitude image, distance image, and point cloud.
 '''
 
 import numpy as np
@@ -74,7 +74,7 @@ sensor = pytofcore.Sensor(protocol_version=args.protocol_version, port_name=args
 rays = np.array(sensor.pixel_rays).reshape(
         (3, 240, 320)).transpose((1, 2, 0))
 sensor.subscribe_measurement(measurement_callback)
-sensor.set_integration_times(4000,0,0)
+sensor.set_integration_time(4000)
 sensor.stream_distance_amplitude()
 signal.signal(signal.SIGINT, handler)
 
