@@ -89,7 +89,6 @@ static std::string devicePort1{DEFAULT_PORT_NAME};
 static std::string devicePort2{"/dev/ttyACM2"};
 static volatile bool exitRequested{false};
 static  bool threadExitRequested{false};
-static uint16_t protocolVersion{DEFAULT_PROTOCOL_VERSION};
 static uint16_t minAmplitude{0};
 
 tofcore::CartesianTransform cartesianTransform1_;
@@ -315,7 +314,7 @@ namespace po = boost::program_options;
 static void parseArgs(int argc, char *argv[])
 {
     po::options_description desc("illuminator board test");
-    desc.add_options()("help,h", "produce help message")("device1-uri,p1", po::value<std::string>(&devicePort1)->default_value(devicePort1))("device2-uri,p2", po::value<std::string>(&devicePort2)->default_value(devicePort2))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))("min-amplitude,m", po::value<uint16_t>(&minAmplitude)->default_value(0));
+    desc.add_options()("help,h", "produce help message")("device1-uri,p1", po::value<std::string>(&devicePort1)->default_value(devicePort1))("device2-uri,p2", po::value<std::string>(&devicePort2)->default_value(devicePort2))("min-amplitude,m", po::value<uint16_t>(&minAmplitude)->default_value(0));
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -345,8 +344,8 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
 #endif
     {
-        tofcore::Sensor sensor1{protocolVersion, devicePort1, baudRate};
-        tofcore::Sensor sensor2{protocolVersion, devicePort2, baudRate};
+        tofcore::Sensor sensor1{devicePort1, baudRate};
+        tofcore::Sensor sensor2{devicePort2, baudRate};
         std::vector<double> rays1_x, rays1_y, rays1_z ;
         std::vector<double> rays2_x, rays2_y, rays2_z ;
         try
@@ -375,10 +374,12 @@ int main(int argc, char *argv[])
 
         sensor1.subscribeMeasurement(&measurement_callback1); // callback is called from background thread
         sensor1.setIntegrationTime(4000);
+        sensor1.setModulation(6000);
         sensor1.streamDistanceAmplitude();
 
         sensor2.subscribeMeasurement(&measurement_callback2); // callback is called from background thread
         sensor2.setIntegrationTime(4000);
+        sensor2.setModulation(6010);
         sensor2.streamDistanceAmplitude();
         cupidThread = spawn_cupid();
           inputThread=  std::thread(&wait_input);

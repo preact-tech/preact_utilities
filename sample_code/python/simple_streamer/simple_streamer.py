@@ -63,13 +63,12 @@ vis = o3d.visualization.Visualizer()
 vis.create_window()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--protocol-version', default=pytofcore.Sensor.DEFAULT_PROTOCOL_VERSION, type=int, help="Protocol version to use 0 or 1")
 parser.add_argument('-p','--port-name', default=pytofcore.Sensor.DEFAULT_PORT_NAME, type=str, help="Port name to connect to sensor on.")
 parser.add_argument('-m','--min_amplitude', default=0, type=int, help="minimum amplitude to display")
 
 args = parser.parse_args()
 
-sensor = pytofcore.Sensor(protocol_version=args.protocol_version, port_name=args.port_name)
+sensor = pytofcore.Sensor(port_name=args.port_name)
 
 rays = np.array(sensor.pixel_rays).reshape(
         (3, 240, 320)).transpose((1, 2, 0))

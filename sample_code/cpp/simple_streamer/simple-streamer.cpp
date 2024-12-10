@@ -31,7 +31,6 @@ static bool captureAmxxx{false};
 static bool captureDistance{false};
 static std::string devicePort{DEFAULT_PORT_NAME};
 static volatile bool exitRequested{false};
-static uint16_t protocolVersion{DEFAULT_PROTOCOL_VERSION};
 static uint16_t minAmplitude{0};
 
 tofcore::CartesianTransform cartesianTransform_;
@@ -117,7 +116,7 @@ namespace po = boost::program_options;
 static void parseArgs(int argc, char *argv[])
 {
     po::options_description desc("illuminator board test");
-    desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort)->default_value(devicePort))("protocol-version,v", po::value<uint16_t>(&protocolVersion)->default_value(DEFAULT_PROTOCOL_VERSION))("min-amplitude,m", po::value<uint16_t>(&minAmplitude)->default_value(0));
+    desc.add_options()("help,h", "produce help message")("device-uri,p", po::value<std::string>(&devicePort)->default_value(devicePort))("min-amplitude,m", po::value<uint16_t>(&minAmplitude)->default_value(0));
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -147,7 +146,7 @@ int main(int argc, char *argv[])
     signal(SIGQUIT, signalHandler);
 #endif
     {
-        tofcore::Sensor sensor{protocolVersion, devicePort, baudRate};
+        tofcore::Sensor sensor{devicePort, baudRate};
         std::vector<double> rays_x, rays_y, rays_z;
         try
         {
